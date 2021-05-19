@@ -3,7 +3,7 @@ import numpy as np
 import math
 
 
-def find_ROI(image):
+def find_ROI(image, resized_image):
     img = image.copy()
     original = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
     lung_areas = []
@@ -52,9 +52,16 @@ def find_ROI(image):
 
         hull_right = cv2.convexHull(right_lung)
         cv2.drawContours(original, [hull_right], -1, (0, 255, 0), 1)
+        cv2.drawContours(resized_image, [hull_right], -1, (255, 255, 255), 2)
 
         x = 0
         maxRt = 0
+        maxXRt1 = 0
+        maxXRt2 = 0
+        maxYRt1 = 0
+        maxYRt2 = 0
+        centerXRt = 0
+        centerYRt = 0
         while x < len(hull_right) - 1:
             x1 = hull_right[x][0][0]
             y1 = hull_right[x][0][1]
@@ -85,40 +92,43 @@ def find_ROI(image):
             newYRt = math.ceil(cRt)
             cv2.line(original, (centerXRt, centerYRt), (newXRt, newYRt), (255, 0, 255), thickness=1, lineType=8)
 
-        cv2.line(original, (maxXRt1, maxYRt1), (maxXRt2, maxYRt2), (255, 0, 0), thickness=1, lineType=8)
+        if maxXRt1 != 0 & maxXRt2 != 0:
+            cv2.line(original, (maxXRt1, maxYRt1), (maxXRt2, maxYRt2), (255, 0, 0), thickness=1, lineType=8)
 
         minRt = original.shape[0]
         minPointRtX = 0
         minPointRtY = 0
         perpendicularLengthRt = 0
-        for cnt in right_lung:
-            xRtCut = centerXRt
-            while xRtCut > 0:
-                yRtCut = (xRtCut*((-1)*mNewRt)) + cRt
-                if (cnt[0][0] == math.ceil(xRtCut)) & (cnt[0][1] == math.ceil(yRtCut)):
-                    perLengthRt = math.sqrt(math.pow(abs(centerXRt - cnt[0][0]), 2) + math.pow(abs(centerYRt - cnt[0][1]), 2))
-                    if minRt > perLengthRt:
-                        minPointRtX = cnt[0][0]
-                        minPointRtY = cnt[0][1]
-                        perpendicularLengthRt = perLengthRt
-                        minRt = perLengthRt
-                xRtCut -= 1
+        if centerXRt != 0:
+            for cnt in right_lung:
+                xRtCut = centerXRt
+                while xRtCut > 0:
+                    yRtCut = (xRtCut*((-1)*mNewRt)) + cRt
+                    if (cnt[0][0] == math.ceil(xRtCut)) & (cnt[0][1] == math.ceil(yRtCut)):
+                        perLengthRt = math.sqrt(math.pow(abs(centerXRt - cnt[0][0]), 2) + math.pow(abs(centerYRt - cnt[0][1]), 2))
+                        if minRt > perLengthRt:
+                            minPointRtX = cnt[0][0]
+                            minPointRtY = cnt[0][1]
+                            perpendicularLengthRt = perLengthRt
+                            minRt = perLengthRt
+                    xRtCut -= 1
 
-        for cnt in right_lung:
-            yRtCut = centerYRt
-            while yRtCut > int(screenHeight/2):
-                xRtCut = (yRtCut - cRt)/((-1)*mNewRt)
-                if (cnt[0][0] == math.ceil(xRtCut)) & (cnt[0][1] == math.ceil(yRtCut)):
-                    perLengthRt = math.sqrt(math.pow(abs(centerXRt - cnt[0][0]), 2) + math.pow(abs(centerYRt - cnt[0][1]), 2))
-                    if minRt > perLengthRt:
-                        minPointRtX = cnt[0][0]
-                        minPointRtY = cnt[0][1]
-                        perpendicularLengthRt = perLengthRt
-                        minRt = perLengthRt
-                yRtCut -= 1
+        if centerYRt != 0:
+            for cnt in right_lung:
+                yRtCut = centerYRt
+                while yRtCut > int(screenHeight/2):
+                    xRtCut = (yRtCut - cRt)/((-1)*mNewRt)
+                    if (cnt[0][0] == math.ceil(xRtCut)) & (cnt[0][1] == math.ceil(yRtCut)):
+                        perLengthRt = math.sqrt(math.pow(abs(centerXRt - cnt[0][0]), 2) + math.pow(abs(centerYRt - cnt[0][1]), 2))
+                        if minRt > perLengthRt:
+                            minPointRtX = cnt[0][0]
+                            minPointRtY = cnt[0][1]
+                            perpendicularLengthRt = perLengthRt
+                            minRt = perLengthRt
+                    yRtCut -= 1
 
         if (minPointRtX != 0) & (minPointRtY != 0):
-            cv2.circle(original, (minPointRtX, minPointRtY), radius=20, color=(0, 0, 255), thickness=3)
+            cv2.circle(original, (minPointRtX, minPointRtY), radius=5, color=(0, 0, 255), thickness=1)
 
         for cnt in left_lung:
             hull_right = cv2.convexHull(cnt)
@@ -126,9 +136,16 @@ def find_ROI(image):
 
         hull_left = cv2.convexHull(left_lung)
         draw_cont = cv2.drawContours(original, [hull_left], -1, (0, 255, 0), 1)
+        cv2.drawContours(resized_image, [hull_left], -1, (255, 255, 255), 2)
 
         x = 0
         maxLt = 0
+        maxXLt1 = 0
+        maxXLt2 = 0
+        maxYLt1 = 0
+        maxYLt2 = 0
+        centerXLt = 0
+        centerYLt = 0
         while x < len(hull_left) - 1:
             x1 = hull_left[x][0][0]
             y1 = hull_left[x][0][1]
@@ -161,53 +178,60 @@ def find_ROI(image):
             newY = 0
             cv2.line(original, (centerXLt, centerYLt), (newX, newY), (255, 0, 255), thickness=1, lineType=8)
 
-        cv2.line(original, (maxXLt1, maxYLt1), (maxXLt2, maxYLt2), (255, 0, 0), thickness=1, lineType=8)
+        if maxXLt1 != 0 & maxXLt2 != 0:
+            cv2.line(original, (maxXLt1, maxYLt1), (maxXLt2, maxYLt2), (255, 0, 0), thickness=1, lineType=8)
 
         minLt = original.shape[0]
         minPointLtX = 0
         minPointLtY = 0
         perpendicularLengthLt = 0
-        for cnt in left_lung:
-            xLtCut = centerXLt
-            while xLtCut < int(original.shape[1]):
-                yLtCut = (xLtCut*((-1)*mNewLt)) + cLt
-                if (cnt[0][0] == math.ceil(xLtCut)) & (cnt[0][1] == math.ceil(yLtCut)):
-                    perLengthLt = math.sqrt(math.pow(abs(centerXLt - cnt[0][0]), 2) + math.pow(abs(centerYLt - cnt[0][1]), 2))
-                    if minLt > perLengthLt:
-                        minPointLtX = cnt[0][0]
-                        minPointLtY = cnt[0][1]
-                        perpendicularLengthLt = perLengthLt
-                        minLt = perLengthLt
-                xLtCut += 1
 
-        for cnt in left_lung:
-            yLtCut = centerYLt
-            while yLtCut > int(original.shape[0]/2):
-                xLtCut = (yLtCut - cLt)/((-1)*mNewLt)
-                if (cnt[0][0] == math.ceil(xLtCut)) & (cnt[0][1] == math.ceil(yLtCut)):
-                    perLengthLt = math.sqrt(math.pow(abs(centerXLt - cnt[0][0]), 2) + math.pow(abs(centerYLt - cnt[0][1]), 2))
-                    if minLt > perLengthLt:
-                        minPointLtX = cnt[0][0]
-                        minPointLtY = cnt[0][1]
-                        perpendicularLengthLt = perLengthLt
-                        minLt = perLengthLt
-                yLtCut -= 1
+        if centerXLt != 0:
+            for cnt in left_lung:
+                xLtCut = centerXLt
+                while xLtCut < int(original.shape[1]):
+                    yLtCut = (xLtCut*((-1)*mNewLt)) + cLt
+                    if (cnt[0][0] == math.ceil(xLtCut)) & (cnt[0][1] == math.ceil(yLtCut)):
+                        perLengthLt = math.sqrt(math.pow(abs(centerXLt - cnt[0][0]), 2) + math.pow(abs(centerYLt - cnt[0][1]), 2))
+                        if minLt > perLengthLt:
+                            minPointLtX = cnt[0][0]
+                            minPointLtY = cnt[0][1]
+                            perpendicularLengthLt = perLengthLt
+                            minLt = perLengthLt
+                    xLtCut += 1
+
+        if centerYLt != 0:
+            for cnt in left_lung:
+                yLtCut = centerYLt
+                while yLtCut > int(original.shape[0]/2):
+                    xLtCut = (yLtCut - cLt)/((-1)*mNewLt)
+                    if (cnt[0][0] == math.ceil(xLtCut)) & (cnt[0][1] == math.ceil(yLtCut)):
+                        perLengthLt = math.sqrt(math.pow(abs(centerXLt - cnt[0][0]), 2) + math.pow(abs(centerYLt - cnt[0][1]), 2))
+                        if minLt > perLengthLt:
+                            minPointLtX = cnt[0][0]
+                            minPointLtY = cnt[0][1]
+                            perpendicularLengthLt = perLengthLt
+                            minLt = perLengthLt
+                    yLtCut -= 1
+
+        cv2.imshow('resized_image_original', original)
 
         if (minPointLtX != 0) & (minPointLtY != 0):
-            cv2.circle(original, (minPointLtX, minPointLtY), radius=20, color=(0, 0, 255), thickness=3)
+            cv2.circle(original, (minPointLtX, minPointLtY), radius=5, color=(0, 0, 255), thickness=1)
 
         print('perpendicular length of right lung --> ', perpendicularLengthRt)
         print('perpendicular length of left lung --> ', perpendicularLengthLt)
 
-        x, y, w, h = cv2.boundingRect(left_lung)
+        xrt, yrt, wrt, hrt = cv2.boundingRect(left_lung)
 
-        # cv2.imshow('Gaussian Blur', y)
-        x, y, w, h = cv2.boundingRect(right_lung)
+        xlt, ylt, wlt, hlt = cv2.boundingRect(right_lung)
 
         gray_img_arr = np.asarray(original)
 
         cv2.imshow('ROI', original)
+        cv2.imshow('resized_image_ROI', resized_image)
 
-        cv2.waitKey(0)
+        # cv2.waitKey(0)
         lungs = [left_lung, right_lung, center_left, center_rigth]
-        return lungs
+
+        return resized_image, lungs, perpendicularLengthRt, perpendicularLengthLt

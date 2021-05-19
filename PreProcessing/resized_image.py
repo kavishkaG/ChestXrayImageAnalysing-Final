@@ -5,7 +5,7 @@ def resized_image(img, screen_height, screen_width):
     img_height = img.shape[0]
     img_width = img.shape[1]
 
-    print('img_height-->', img.shape[0], ' img_width-->', img.shape[1])
+    # print('img_height-->', img.shape[0], ' img_width-->', img.shape[1])
 
     # select scale percentage according to screen resolution without changing image ratio
     scale_percent = 0
@@ -32,8 +32,8 @@ def resized_image(img, screen_height, screen_width):
 
     width = int(img.shape[1] * scale_percent / 100)
     height = int(img.shape[0] * scale_percent / 100)
-    print(width)
-    print(height)
+    # print(width)
+    # print(height)
     dim = (width, height)
 
     # resize image

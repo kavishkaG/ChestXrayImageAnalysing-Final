@@ -2,15 +2,15 @@ import numpy as np
 import cv2
 
 
-def enhanced_image(gray_img):
+def enhanced_image_For(gray_img):
     gray_img_arr = np.asarray(gray_img)
 
     img_arr = gray_img_arr.copy()
 
-    print(img_arr[400])
+    # print(img_arr[400])
 
     maxList = list(map(max, img_arr))
-    print('maxList', maxList)
+    # print('maxList', maxList)
     maxGrayLevel = min(map(max, img_arr))
 
     if maxGrayLevel > 200:
@@ -34,7 +34,5 @@ def enhanced_image(gray_img):
 
             if first_clahe_gray_img[y][x] > (maxNumber - 30):
                 first_clahe_gray_img[y][x] = 255
-
-    # cv2.imshow('first_clahe_gray_img', first_clahe_gray_img)
 
     return first_clahe_gray_img

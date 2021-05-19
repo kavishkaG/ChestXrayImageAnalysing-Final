@@ -1,0 +1,33 @@
+{% extends "import.html" %} 
+{% block content %}
+
+<center>
+<h2>Chest X-Ray Image Analysing System</h2><br>
+
+<div>
+    <form id="upload-file" method="post" enctype="multipart/form-data">
+        <label for="imageUpload" class="btn btn-lg" style="color: white; background-color: #7D0541; border: none">
+            Upload Image
+        </label>
+        <input type="file" name="file" id="imageUpload" accept=".png, .jpg, .jpeg">
+    </form>
+
+    <div class="image-section" style="display:none;">
+        <div class="img-preview">
+            <div id="imagePreview">
+            </div>
+        </div>
+        <div>
+            <button type="button" class="btn btn-lg " id="btn-predict" style="color: white; background-color: #7D0541; border: none">Find Your Disease</button>
+        </div>
+    </div>
+
+    <div class="loader" style="display:none;"></div>
+
+    <h3 id="result">
+        <span> </span>
+    </h3>
+
+</div>
+</center><br><br>
+{% endblock %}

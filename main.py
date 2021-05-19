@@ -1,52 +1,109 @@
 import numpy as np
+import os
 import cv2
 import tkinter as tk
+from werkzeug.utils import secure_filename
 
-from FeactureExtraction.costophrenic_angle import find_angle
+from Classification.SVM.fibrosisAndPneumonia import fibrosisOrPneumoniaSVM
 from PreProcessing.convert_to_gray import convert_to_gray
-from PreProcessing.drew_histogram import drew_histogram
-from PreProcessing.enhanced_image import enhanced_image
+from PreProcessing.enhanced_image import enhanced_image_For
 from PreProcessing.resized_image import resized_image
+from ROI.findAngle import find_angle
 from Segmentation.segment_lungs import segment
 from ROI.find_roi import find_ROI
+from BoneSuppression.bone_suppresion import predict
 
-root = tk.Tk()
+from flask import Flask, render_template, request
 
-screen_width = root.winfo_screenwidth()
-screen_height = root.winfo_screenheight()
-print('screen resolution : ', screen_width, ',', screen_height)
+app = Flask(__name__)
 
-# img = cv2.imread('C:\\Users\\Dell\\Desktop\\Effusion\\unnamed.jpg', cv2.IMREAD_UNCHANGED)
-# img = cv2.imread('C:\\Users\\Dell\\Desktop\\No Findings\\abcd.jpeg', cv2.IMREAD_UNCHANGED)
-# img = cv2.imread('C:\\Users\\Dell\\Desktop\\No Findings\\00004531_002.png', cv2.IMREAD_UNCHANGED)
-# img = cv2.imread('C:\\Users\\Dell\\Desktop\\TB\\CHNCXR_0335_1.png', cv2.IMREAD_UNCHANGED)
-# img = cv2.imread('C:\\Users\\Dell\\Desktop\\Pneumonia\\00014234_000.png', cv2.IMREAD_UNCHANGED)
-img = cv2.imread('C:\\Users\\Dell\\Desktop\\Fibrosis\\00000067_000.png', cv2.IMREAD_UNCHANGED)
 
-resized_img = resized_image(img, screen_height, screen_width)
+@app.route('/', methods=['GET'])
+def index():
+    # Main page
+    return render_template('index.html')
 
-# cv2.imshow('resized_img', resized_img)
 
-gray_img = convert_to_gray(resized_img)
+@app.route('/predict', methods=['GET', 'POST'])
+def upload():
+    if request.method == 'POST':
+        f = request.files['file']
 
-image1 = gray_img.copy()
+        # Save the file to ./uploads
+        base_path = os.path.dirname(__file__)
+        file_path = os.path.join(
+            base_path, 'uploads', secure_filename(f.filename))
+        f.save(file_path)
+        print(file_path)
 
-# cv2.imshow('gray_img', gray_img)
+        root = tk.Tk()
+        screen_width = root.winfo_screenwidth()
+        screen_height = root.winfo_screenheight()
 
-enhanced_image = enhanced_image(gray_img)
+        img = cv2.imread(file_path, cv2.IMREAD_UNCHANGED)
 
-# cv2.imshow('enhanced_image', enhanced_image)
+        # resized_img = resized_image(img, screen_height, screen_width)
+        resized_img = cv2.resize(img, (512, 512))
 
-# drew_histogram(gray_img, enhanced_image)
+        cv2.imshow('resized_img', resized_img)
 
-noise_removal_gray_img = cv2.medianBlur(enhanced_image, 5)
+        gray_img = convert_to_gray(resized_img)
 
-# cv2.imshow('noise_removal_gray_image', noise_removal_gray_img)
+        output = predict(gray_img)
 
-closing = segment(gray_img, noise_removal_gray_img)
+        resizedBoneImg = cv2.resize(output, (512, 512))
+        cv2.imshow('bone suppressed', resizedBoneImg)
 
-lungs = find_ROI(closing[1])
+        enhanced_image = enhanced_image_For(resizedBoneImg)
 
-# find_angle(lungs, closing[1])
+        cv2.imshow('enhanced_image', enhanced_image)
 
-cv2.waitKey(0)
+        noise_removal_gray_img = cv2.medianBlur(enhanced_image, 5)
+
+        cv2.imshow('noise_removal_gray_img', noise_removal_gray_img)
+
+        closing = segment(gray_img, noise_removal_gray_img)
+
+        cv2.imshow('closing', closing[1])
+
+        resized_img_with_hull, lungs, perpendicularLengthRt, perpendicularLengthLt = find_ROI(closing[2], resized_img)
+
+        # lungsInAccurateImage, lungsInAccurateImage_resized_img_with_hull, accurateImagePerpendicularLengthRt, accurateImagePerpendicularLengthLt = find_ROI_angle(otsuBinarizedImage, resized_evaluateImg)
+
+        if perpendicularLengthRt == 0 or perpendicularLengthLt == 0:
+            costophrenicAnlge = find_angle(lungs, closing[1])
+            if costophrenicAnlge != 30:
+                return 'Effusion'
+            else:
+                response = fibrosisOrPneumoniaSVM(closing[1])
+                if response == 0:
+                    return 'Pneumonia'
+                elif response == 1:
+                    return 'fibrosis'
+                else:
+                    return 'Abnormal'
+
+        else:
+            if 10 < perpendicularLengthRt < 20 and 10 < perpendicularLengthLt < 20:
+                return 'Normal'
+            else:
+                costophrenicAnlge = find_angle(lungs, closing[1])
+                if costophrenicAnlge == 30:
+                    return 'Effusion'
+                else:
+                    response = fibrosisOrPneumoniaSVM(closing[1])
+                    if response == 0:
+                        return 'Pneumonia'
+                    elif response == 1:
+                        return 'fibrosis'
+                    else:
+                        return 'Abnormal'
+
+        cv2.waitKey(0)
+
+    return None
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
+

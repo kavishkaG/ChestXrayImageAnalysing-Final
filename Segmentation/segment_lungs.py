@@ -19,7 +19,7 @@ def grayscaleToBinaryConvertion(image):
 
 
 def deleteElement(array, index):
-    print('del index', index)
+    # print('del index', index)
     delete_area = np.delete(array, index)
     return delete_area
 
@@ -42,7 +42,7 @@ def filter_by_size(image):
     sensitivity_2 = 2
 
     area_ratio_1 = (largest_area_1 - largest_area_2) / largest_area_1
-    print(area_ratio_1)
+    # print(area_ratio_1)
     considered_cnt_lst = [cnt_sorted[0], cnt_sorted[1]]
 
     if area_ratio_1 > sensitivity_1:
@@ -61,6 +61,9 @@ def filter_by_size(image):
 
 def segment(resized_img, noise_removal_gray_img):
 
+    # cv2.imshow('resized_img_seg', resized_img)
+    # cv2.imshow('noise_removal_gray_img', noise_removal_gray_img)
+
     thresh_img = cv2.adaptiveThreshold(noise_removal_gray_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
                                        cv2.THRESH_BINARY_INV,
                                        699, 6)
@@ -76,23 +79,23 @@ def segment(resized_img, noise_removal_gray_img):
 
     # divided to clusters
     markers = cv2.connectedComponentsWithStats(constant, 8, cv2.CV_32S)
-    print('markers', markers)
+    # print('markers', markers)
 
     marker_area_2 = markers[2]
-    print('marker_area_2', markers[1])
+    # print('marker_area_2', markers[1])
     lung_mask_2 = markers[1] == -1
 
     for index, i in enumerate(marker_area_2):
         # print('index', index)
         if i[0] == 0 and i[1] == 0:
             marker_delete_area = deleteElement(marker_area_2, index)
-            print('maker_delete_area', marker_delete_area)
+            # print('maker_delete_area', marker_delete_area)
         else:
             lung_mask_2 = lung_mask_2 + (markers[1] == index)
 
         marker_area = i[4]
 
-    print('marker_area', marker_area)
+    # print('marker_area', marker_area)
     thresh2 = erosion_img
     thresh2[lung_mask_2 == False] = 0
 
@@ -104,8 +107,10 @@ def segment(resized_img, noise_removal_gray_img):
 
     dilation = cv2.dilate(filterSizeImage, kernel, iterations=1)
 
+    # cv2.imshow('dilation', dilation)
+
     lung_out = resized_img.copy()
     lung_out[dilation == False] = 0
     # cv2.imshow('lung_out', lung_out)
 
-    return thresh2, lung_out
+    return thresh2, lung_out, dilation
